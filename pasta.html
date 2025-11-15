@@ -1,0 +1,1743 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🛢️ Control Pasta de Maní</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#0f172a;
+      --bg-soft:#111827;
+      --panel:#0b1120;
+      --card:#020617;
+      --accent:#38bdf8;
+      --accent-soft:#0ea5e9;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --danger:#ef4444;
+      --ok:#22c55e;
+      --warn:#facc15;
+      --border:#1e293b;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:radial-gradient(circle at top,#1e293b,#020617 55%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    header{
+      padding:10px 16px;
+      border-bottom:1px solid #1f2933;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      background:linear-gradient(90deg,#020617,#0f172a);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    header h1{
+      margin:0;
+      font-size:1.1rem;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      letter-spacing:0.03em;
+    }
+    header h1 span.icon{font-size:1.4rem;}
+    header .subtitle{
+      font-size:.8rem;
+      color:var(--muted);
+    }
+    header .left-head{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    header .right-head{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    header .totals{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:.78rem;
+      text-align:right;
+    }
+    header .totals div{
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,.7);
+      border:1px solid rgba(148,163,184,.2);
+    }
+    .small-header-btn{
+      font-size:.8rem;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.5);
+      background:#020617;
+      color:var(--text);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .small-header-btn span.icon{font-size:1rem;}
+    .small-header-btn:hover{
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(56,189,248,.3);
+    }
+
+    main{
+      flex:1;
+      padding:18px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .panel{
+      background:rgba(15,23,42,.9);
+      border-radius:18px;
+      padding:14px 16px 18px;
+      border:1px solid var(--border);
+      box-shadow:0 24px 46px rgba(0,0,0,.55);
+      backdrop-filter:blur(10px);
+    }
+    #dashboard{
+      width:100%;
+      max-width:1200px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    h2{
+      margin:0 0 6px;
+      font-size:1rem;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:#cbd5f5;
+    }
+    h2 span.icon{font-size:1.1rem;}
+    #tankDateInfo{
+      font-size:.78rem;
+      color:var(--muted);
+    }
+
+    .layout-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:3px;
+      margin-bottom:2px;
+    }
+    .layout-buttons{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .small-note{
+      font-size:.75rem;
+      color:var(--muted);
+    }
+    .small-layout-btn{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #1f2937;
+      background:rgba(15,23,42,.85);
+      color:var(--muted);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    .small-layout-btn:hover{
+      border-color:var(--accent);
+      color:var(--text);
+    }
+
+    .tank-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      position:relative;
+      min-height:420px;
+    }
+    .tank-grid.plan-mode{
+      display:block;
+      position:relative;
+      min-height:420px;
+    }
+    .tank-grid.plan-mode .tank-card{
+      position:absolute;
+      width:260px;
+      max-width:45%;
+    }
+    .tank-grid.editing .tank-card{
+      outline:1px dashed var(--accent);
+      cursor:move;
+    }
+
+    #pipesSvg{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    @media(max-width:1100px){
+      .tank-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+      .tank-grid.plan-mode{min-height:480px;}
+    }
+    @media(max-width:650px){
+      .tank-grid{
+        grid-template-columns:repeat(1,minmax(0,1fr));
+      }
+      .tank-grid.plan-mode{
+        min-height:700px;
+      }
+      .tank-grid.plan-mode .tank-card{
+        width:80%;
+      }
+      main{padding:10px;}
+    }
+
+    .tank-card{
+      background:var(--card);
+      border-radius:16px;
+      padding:12px;
+      border:1px solid rgba(148,163,184,.25);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      position:relative;
+      overflow:hidden;
+      z-index:1;
+    }
+    .tank-card::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:radial-gradient(circle at 0 0,rgba(56,189,248,.2),transparent 55%);
+      opacity:.7;
+      pointer-events:none;
+    }
+    .tank-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      position:relative;
+      z-index:1;
+    }
+    .tank-name{
+      font-size:.9rem;
+      font-weight:600;
+      display:flex;
+      align-items:center;
+      gap:4px;
+    }
+    .chip{
+      font-size:.7rem;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      color:var(--muted);
+      background:rgba(15,23,42,.9);
+    }
+    .tank-body{
+      display:flex;
+      gap:10px;
+      align-items:flex-end;
+      position:relative;
+      z-index:1;
+    }
+    .tank-shape{
+      flex:0 0 56px;
+      height:150px;
+      border-radius:12px 12px 8px 8px;
+      border:2px solid #1f2937;
+      background:linear-gradient(to bottom,#020617,#020617);
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+    }
+    .tank-neck{
+      position:absolute;
+      top:-14px;
+      left:26%;
+      right:26%;
+      height:12px;
+      border-radius:999px 999px 4px 4px;
+      border:2px solid #1f2937;
+      background:#020617;
+    }
+    .tank-fill{
+      width:100%;
+      background:linear-gradient(180deg,var(--accent-soft),#0ea5e9,#0369a1);
+      box-shadow:0 -8px 16px rgba(56,189,248,.7) inset;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      position:relative;
+      transition:height .4s ease-out;
+    }
+    .tank-fill span{
+      font-size:.65rem;
+      padding:2px 6px;
+      background:rgba(15,23,42,.85);
+      border-radius:999px;
+      margin-top:4px;
+    }
+    .tank-empty-label{
+      position:absolute;
+      bottom:6px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:.65rem;
+      color:#64748b;
+      transition:opacity .25s ease-out;
+    }
+    .tank-info{
+      flex:1;
+      font-size:.8rem;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .tank-info-row{
+      display:flex;
+      justify-content:space-between;
+      gap:4px;
+    }
+    .badge{
+      padding:2px 7px;
+      border-radius:999px;
+      font-size:.7rem;
+      border:1px solid rgba(148,163,184,.4);
+    }
+    .badge.ok{border-color:rgba(34,197,94,.6);color:#bbf7d0;}
+    .badge.warn{border-color:rgba(250,204,21,.7);color:#fef9c3;}
+    .badge.danger{border-color:rgba(248,113,113,.7);color:#fee2e2;}
+    .perc-bar{
+      position:relative;
+      width:100%;
+      height:8px;
+      border-radius:999px;
+      background:#020617;
+      overflow:hidden;
+      border:1px solid #1f2937;
+      margin-top:4px;
+    }
+    .perc-bar-fill{
+      position:absolute;
+      inset:0;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#22c55e,#a3e635,#facc15,#f97316,#ef4444);
+      transition:width .4s ease-out;
+    }
+    .perc-label{
+      font-size:.7rem;
+      color:var(--muted);
+      text-align:right;
+    }
+
+    /* MENÚ OVERLAY */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.8);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:40;
+      backdrop-filter:blur(4px);
+    }
+    .overlay-inner{
+      width:100%;
+      max-width:780px;
+      max-height:90vh;
+      overflow:auto;
+      position:relative;
+    }
+    .overlay-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:6px;
+    }
+    .overlay-header-title{
+      font-size:.9rem;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#e5e7eb;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .overlay-close{
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      cursor:pointer;
+      font-size:1rem;
+      padding:4px 8px;
+      border-radius:999px;
+    }
+    .overlay-close:hover{
+      background:#020617;
+      color:#e5e7eb;
+    }
+
+    .tabs{
+      display:flex;
+      gap:6px;
+      margin-bottom:8px;
+      margin-top:6px;
+      flex-wrap:wrap;
+    }
+    .tab-btn{
+      flex:1;
+      padding:6px 8px;
+      font-size:.78rem;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background:#020617;
+      color:var(--muted);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      min-width:120px;
+    }
+    .tab-btn.active{
+      background:linear-gradient(90deg,#0ea5e9,#22c55e);
+      color:#0b1120;
+      border-color:transparent;
+      font-weight:600;
+    }
+    .tab-content{display:none;margin-top:4px;}
+    .tab-content.active{display:block;}
+
+    form{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:.8rem;
+    }
+    label{
+      font-size:.76rem;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+    }
+    input, select, textarea{
+      width:100%;
+      padding:6px 8px;
+      border-radius:8px;
+      border:1px solid #1f2937;
+      background:#020617;
+      color:var(--text);
+      font-size:.8rem;
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(56,189,248,.4);
+    }
+    textarea{resize:vertical;min-height:40px;}
+    .field-row{
+      display:flex;
+      gap:8px;
+    }
+    .field-row > div{flex:1;}
+    button{
+      border:none;
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:.8rem;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      justify-content:center;
+    }
+    .btn-primary{
+      background:linear-gradient(90deg,#0ea5e9,#22c55e);
+      color:#0b1120;
+      font-weight:600;
+    }
+    .btn-ghost{
+      background:transparent;
+      color:var(--muted);
+      border:1px solid #1f2937;
+    }
+    .btn-danger{
+      background:rgba(239,68,68,.1);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.5);
+    }
+    .summary-box{
+      margin-top:4px;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px dashed #1f2937;
+      background:rgba(15,23,42,.6);
+      font-size:.74rem;
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .summary-box strong{color:#e5e7eb;}
+    .summary-row{
+      display:flex;
+      justify-content:space-between;
+    }
+
+    /* TABLAS HISTORIAL */
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.78rem;
+    }
+    th,td{
+      padding:4px 6px;
+      border-bottom:1px solid #1f2937;
+      text-align:left;
+    }
+    th{
+      color:var(--muted);
+      font-weight:500;
+    }
+
+    .pipe-row{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      margin-top:4px;
+      flex-wrap:wrap;
+    }
+    .pipe-row small{
+      font-size:.7rem;
+      color:var(--muted);
+    }
+
+    .toast{
+      position:fixed;
+      bottom:14px;
+      left:50%;
+      transform:translateX(-50%);
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(15,23,42,.95);
+      border:1px solid rgba(56,189,248,.7);
+      color:#e5f6ff;
+      font-size:.8rem;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      box-shadow:0 15px 30px rgba(0,0,0,.6);
+      z-index:50;
+    }
+    .toast span.icon{font-size:1rem;}
+
+    footer{
+      padding:6px 12px;
+      font-size:.7rem;
+      color:#6b7280;
+      text-align:right;
+    }
+
+    /* LOADING SCREEN */
+    .loading-screen{
+      position:fixed;
+      inset:0;
+      background:radial-gradient(circle at top,#020617,#020617 55%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:100;
+    }
+    .loading-inner{
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+      padding:20px 24px;
+      border-radius:16px;
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(148,163,184,.4);
+      box-shadow:0 24px 40px rgba(0,0,0,.5);
+    }
+    .logo-circle{
+      width:72px;
+      height:72px;
+      border-radius:999px;
+      border:2px solid rgba(56,189,248,.7);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      font-size:1.4rem;
+      color:#e5f2ff;
+      background:radial-gradient(circle at 30% 0,#38bdf8,#0f172a);
+      overflow:hidden;
+    }
+    .logo-circle img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .loading-text{
+      font-size:.9rem;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      color:#e5e7eb;
+    }
+    .loading-bar{
+      width:260px;
+      max-width:80vw;
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.5);
+      background:rgba(15,23,42,.7);
+      overflow:hidden;
+      position:relative;
+    }
+    .loading-bar-fill{
+      position:absolute;
+      inset:0;
+      width:0%;
+      background:linear-gradient(90deg,#22c55e,#a3e635,#facc15,#f97316,#0ea5e9);
+      box-shadow:0 0 16px rgba(56,189,248,.8);
+      animation:loading-fill 2.3s ease-out forwards;
+    }
+    @keyframes loading-fill{
+      from{width:0%;}
+      to{width:100%;}
+    }
+    .loading-screen.hide{
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .4s ease-out;
+    }
+
+    /* TEMA CLARO */
+    body.light{
+      background:radial-gradient(circle at top,#e2e8f0,#f8fafc 55%);
+      color:#0f172a;
+    }
+    body.light header{
+      background:linear-gradient(90deg,#e2e8f0,#cbd5f5);
+      border-bottom-color:#cbd5f5;
+    }
+    body.light .subtitle{color:#4b5563;}
+    body.light .panel{
+      background:#ffffff;
+      border-color:#e2e8f0;
+      box-shadow:0 18px 35px rgba(15,23,42,.12);
+    }
+    body.light .tank-card{
+      background:#f9fafb;
+      border-color:#e2e8f0;
+    }
+    body.light .chip{
+      background:#e5f0ff;
+      color:#334155;
+      border-color:#bfdbfe;
+    }
+    body.light .tank-shape{
+      border-color:#cbd5f5;
+      background:linear-gradient(to bottom,#f9fafb,#e5e7eb);
+    }
+    body.light .tank-neck{
+      border-color:#cbd5f5;
+      background:#e5e7eb;
+    }
+    body.light .tank-empty-label{
+      color:#94a3b8;
+    }
+    body.light .perc-bar{
+      background:#e5e7eb;
+      border-color:#cbd5f5;
+    }
+    body.light input,
+    body.light select,
+    body.light textarea{
+      background:#f9fafb;
+      border-color:#cbd5f5;
+      color:#0f172a;
+    }
+    body.light label,
+    body.light .small-note{
+      color:#6b7280;
+    }
+    body.light .btn-ghost,
+    body.light .small-layout-btn{
+      background:#f9fafb;
+      border-color:#cbd5f5;
+      color:#334155;
+    }
+    body.light .btn-danger{
+      background:#fee2e2;
+      border-color:#fecaca;
+      color:#7f1d1d;
+    }
+    body.light .summary-box{
+      background:#f8fafc;
+      border-color:#e2e8f0;
+    }
+    body.light footer{
+      color:#9ca3af;
+    }
+    body.light .small-header-btn{
+      background:#f9fafb;
+      border-color:#cbd5f5;
+      color:#1f2933;
+    }
+    body.light .overlay{
+      background:rgba(15,23,42,.2);
+    }
+    body.light .overlay-inner.panel{
+      background:#ffffff;
+    }
+    body.light .loading-screen{
+      background:radial-gradient(circle at top,#e5e7eb,#cbd5f5 55%);
+    }
+    body.light .loading-inner{
+      background:rgba(255,255,255,.95);
+      border-color:#e2e8f0;
+      box-shadow:0 20px 40px rgba(15,23,42,.18);
+    }
+    body.light .logo-circle{
+      color:#0f172a;
+      background:radial-gradient(circle at 30% 0,#bae6fd,#ffffff);
+      border-color:#0ea5e9;
+    }
+    body.light .loading-text{
+      color:#1f2937;
+    }
+    body.light .loading-bar{
+      background:#e5e7eb;
+      border-color:#cbd5f5;
+    }
+    body.light th, body.light td{
+      border-bottom-color:#e5e7eb;
+    }
+  </style>
+</head>
+<body class="light">
+<header>
+  <div class="left-head">
+    <h1>
+      <span class="icon">🛢️</span>
+      Control Pasta de Maní
+    </h1>
+    <div class="subtitle">Tanques · Vacío con ruleta · Stock en kg</div>
+  </div>
+  <div class="right-head">
+    <div class="totals" id="headerTotals">
+      <!-- Totales globales -->
+    </div>
+    <button id="themeToggleBtn" class="small-header-btn">
+      <span class="icon">☀️</span> Claro
+    </button>
+    <button id="openMenuBtn" class="small-header-btn">
+      <span class="icon">☰</span> Menú
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- DASHBOARD SOLO -->
+  <section id="dashboard" class="panel">
+    <h2><span class="icon">📊</span>Dashboard de tanques</h2>
+    <div id="tankDateInfo" class="small-note">
+      Última actualización por tanque según la última medición registrada.
+    </div>
+    <div class="layout-toolbar">
+      <div class="small-note">
+        Modo plano: arrastrá los tanques en edición para que coincidan con el lay-out real 🗺️
+      </div>
+      <div class="layout-buttons">
+        <button id="toggleLayoutMode" class="btn-ghost small-layout-btn">🧱 Editar plano</button>
+        <button id="resetLayoutBtn" class="btn-ghost small-layout-btn">↺ Reset posiciones</button>
+      </div>
+    </div>
+    <div class="tank-grid plan-mode" id="tankGrid">
+      <svg id="pipesSvg"></svg>
+      <!-- Tanques -->
+    </div>
+  </section>
+</main>
+
+<footer>
+  Control interno de insumos · Pasta de maní · Modo fábrica ON 🏭
+</footer>
+
+<!-- MENÚ / GESTIÓN -->
+<div id="menuOverlay" class="overlay">
+  <div class="overlay-inner panel">
+    <div class="overlay-header">
+      <div class="overlay-header-title">
+        <span>⚙️</span> Menú de gestión
+      </div>
+      <button class="overlay-close" id="closeMenuBtn">✖</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="configTab">⚙️ Configuración tanques</button>
+      <button class="tab-btn" data-tab="medicionTab">📏 Medición diaria</button>
+      <button class="tab-btn" data-tab="movimientosTab">📆 Consumos / ingresos</button>
+      <button class="tab-btn" data-tab="historialTab">📜 Historial stock</button>
+    </div>
+
+    <!-- Configuración de tanques -->
+    <div class="tab-content active" id="configTab">
+      <form id="configForm">
+        <div class="small-note">
+          Capacidades y alturas de vacío reales según planta.  
+          Nota: los primeros <strong>10 cm</strong> de vacío se consideran llenos (no bombeables).
+        </div>
+        <div id="configRows">
+          <!-- filas generadas por JS -->
+        </div>
+
+        <div class="small-note" style="margin-top:8px;">
+          Flujo entre tanques (cañerías visuales en el plano del dashboard).
+        </div>
+        <div id="pipesConfigRows">
+          <!-- filas de cañerías -->
+        </div>
+        <button type="button" id="addPipeBtn" class="btn-ghost" style="margin-top:4px;">
+          ➕ Agregar flujo
+        </button>
+
+        <div class="field-row" style="margin-top:10px;">
+          <button type="submit" class="btn-primary">💾 Guardar configuración</button>
+          <button type="button" id="resetDataBtn" class="btn-danger">🧨 Resetear todo (app)</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Medición diaria -->
+    <div class="tab-content" id="medicionTab">
+      <form id="medicionForm">
+        <div class="field-row">
+          <div>
+            <label>Fecha
+              <input type="date" id="medicionFecha" required>
+            </label>
+          </div>
+          <div>
+            <label>Tanque
+              <select id="medicionTanque" required></select>
+            </label>
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Vacío medido (cm)
+              <input type="number" id="medicionVacio" min="10" step="0.1" required>
+            </label>
+          </div>
+          <div>
+            <label>Stock calculado (kg)
+              <input type="text" id="medicionStockCalculado" readonly>
+            </label>
+          </div>
+        </div>
+        <div class="small-note">
+          Lógica por tanque:<br>
+          • Si ruleta ≤ 10 cm → tanque lleno (100%).<br>
+          • Si ruleta ≥ vacío máx → 0 kg.<br>
+          • Entre 10 cm y vacío máx: interpolación lineal entre <strong>capacidad kg</strong> y 0 kg.
+        </div>
+        <button type="submit" class="btn-primary">✅ Registrar medición</button>
+      </form>
+    </div>
+
+    <!-- Movimientos (consumos / ingresos) -->
+    <div class="tab-content" id="movimientosTab">
+      <form id="movForm">
+        <div class="field-row">
+          <div>
+            <label>Fecha
+              <input type="date" id="movFecha" required>
+            </label>
+          </div>
+          <div>
+            <label>Tipo
+              <select id="movTipo">
+                <option value="consumo">Consumo</option>
+                <option value="ingreso">Ingreso</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Cantidad (kg)
+              <input type="number" id="movKg" min="0" step="0.1" required>
+            </label>
+          </div>
+          <div>
+            <label>Notas (opcional)
+              <input type="text" id="movNotas" placeholder="Línea, turno, etc.">
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">➕ Registrar movimiento</button>
+
+        <div style="margin-top:8px;">
+          <label>
+            Ver resumen del día
+            <input type="date" id="resumenFecha">
+          </label>
+          <div class="summary-box" id="resumenBox">
+            <div class="summary-row">
+              <span>Total consumos:</span>
+              <strong id="resumenConsumo">0 kg</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total ingresos:</span>
+              <strong id="resumenIngreso">0 kg</strong>
+            </div>
+            <div class="summary-row">
+              <span>Balance neto:</span>
+              <strong id="resumenNeto">0 kg</strong>
+            </div>
+            <div class="small-note">
+              Estos movimientos no recalculan el stock de tanque (manda la medición real 🧠),
+              pero te muestran el ritmo diario de consumo/ingreso.
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Historial stock -->
+    <div class="tab-content" id="historialTab">
+      <div class="field-row">
+        <div>
+          <label>Fecha a consultar
+            <input type="date" id="historialFecha">
+          </label>
+        </div>
+      </div>
+      <div class="summary-box" id="historialResumenBox">
+        <div class="summary-row">
+          <span>Fecha consultada:</span>
+          <strong id="historialFechaLbl">-</strong>
+        </div>
+        <div class="summary-row">
+          <span>Stock total estimado:</span>
+          <strong id="historialTotalStock">0 kg</strong>
+        </div>
+      </div>
+      <div class="small-note" style="margin-top:6px;">
+        Vista del stock por tanque según la última medición registrada hasta esa fecha.
+      </div>
+      <div style="margin-top:4px;max-height:220px;overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Tanque</th>
+              <th>Últ. medición</th>
+              <th>Vacío (cm)</th>
+              <th>Stock estimado (kg)</th>
+            </tr>
+          </thead>
+          <tbody id="historialTableBody">
+            <!-- filas por tanque -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none;">
+  <span class="icon">✨</span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- LOADING -->
+<div id="loadingScreen" class="loading-screen">
+  <div class="loading-inner">
+    <div class="logo-circle">
+      <!-- Cuando tengas el logo, reemplazá el span por la imagen:
+      <img src="logo.png" alt="Logo empresa">
+      -->
+      <span>GE</span>
+    </div>
+    <div class="loading-text">Cargando Stock Pasta de Maní...</div>
+    <div class="loading-bar">
+      <div class="loading-bar-fill"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "pastaManiApp_v3";
+  const MIN_VACIO_CM = 10; // los primeros 10 cm se consideran llenos
+  let layoutEditMode = false;
+  let currentTheme = "light";
+  let tankCardElements = {};
+
+  function defaultData(){
+    return {
+      tanks:[
+        {id:"T1", name:"Tanque 1", capacidadKg:11431, alturaMaxCm:262, stockKg:0, lastDate:null},
+        {id:"T2", name:"Tanque 2", capacidadKg:9071,  alturaMaxCm:216, stockKg:0, lastDate:null},
+        {id:"T3", name:"Tanque 3", capacidadKg:9739,  alturaMaxCm:265, stockKg:0, lastDate:null},
+        {id:"TC", name:"Tanque chico", capacidadKg:2328, alturaMaxCm:139, stockKg:0, lastDate:null},
+      ],
+      mediciones:[],
+      movimientos:[],
+      layout:{}, // {tankId:{x,y} en %}
+      pipes:[]   // flujos entre tanques
+    };
+  }
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultData();
+      const parsed = JSON.parse(raw);
+      if(!parsed.tanks) parsed.tanks = defaultData().tanks;
+      if(!parsed.mediciones) parsed.mediciones = [];
+      if(!parsed.movimientos) parsed.movimientos = [];
+      if(!parsed.layout) parsed.layout = {};
+      if(!parsed.pipes) parsed.pipes = [];
+      return parsed;
+    }catch(e){
+      console.error("Error cargando datos, reseteo:", e);
+      return defaultData();
+    }
+  }
+
+  function saveData(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  }
+
+  let appData = loadData();
+
+  // Utils
+  function todayISO(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+
+  function formatKg(value){
+    return (Math.round(value*10)/10).toLocaleString("es-AR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " kg";
+  }
+
+  function showToast(msg){
+    const toast = document.getElementById("toast");
+    const msgSpan = document.getElementById("toastMsg");
+    msgSpan.textContent = msg;
+    toast.style.display = "flex";
+    setTimeout(()=>toast.style.display="none", 2000);
+  }
+
+  function getTankById(id){
+    return appData.tanks.find(t=>t.id===id);
+  }
+
+  function computeGlobalTotals(){
+    let capTotal = 0;
+    let stockTotal = 0;
+    appData.tanks.forEach(t=>{
+      capTotal += Number(t.capacidadKg)||0;
+      stockTotal += Number(t.stockKg)||0;
+    });
+    const perc = capTotal>0 ? (stockTotal/capTotal)*100 : 0;
+    return {capTotal, stockTotal, perc};
+  }
+
+  // Cálculo de stock según vacío y parámetros reales
+  function calcularStockPorVacio(tank, vacioCm){
+    const cap = Number(tank.capacidadKg)||0;
+    const maxV = Number(tank.alturaMaxCm)||0;
+    if(maxV <= MIN_VACIO_CM || cap<=0) return 0;
+
+    const v = Number(vacioCm);
+    if(isNaN(v)) return 0;
+
+    if(v <= MIN_VACIO_CM) return cap;      // lleno
+    if(v >= maxV) return 0;                // vacío
+
+    const frac = (maxV - v) / (maxV - MIN_VACIO_CM);
+    const clampedFrac = Math.max(0, Math.min(1, frac));
+    return clampedFrac * cap;
+  }
+
+  // Layout por defecto (como plano 2x2)
+  function ensureLayoutDefaults(){
+    if(!appData.layout) appData.layout = {};
+    const presets = [
+      {x:10, y:10},
+      {x:60, y:10},
+      {x:10, y:55},
+      {x:60, y:55}
+    ];
+    appData.tanks.forEach((t, idx)=>{
+      if(!appData.layout[t.id]){
+        const p = presets[idx] || {x:10+idx*5, y:10+idx*5};
+        appData.layout[t.id] = {x:p.x, y:p.y};
+      }
+    });
+  }
+
+  // Render header totals
+  function renderHeaderTotals(){
+    const {capTotal, stockTotal, perc} = computeGlobalTotals();
+    const wrap = document.getElementById("headerTotals");
+    const percStr = perc.toFixed(1) + "%";
+    wrap.innerHTML = `
+      <div>Stock total: <strong>${formatKg(stockTotal)}</strong></div>
+      <div>Capacidad total: <strong>${formatKg(capTotal)}</strong></div>
+      <div>Ocupación: <strong>${percStr}</strong></div>
+    `;
+  }
+
+  // Render de cañerías
+  function renderPipes(){
+    const grid = document.getElementById("tankGrid");
+    const svg = document.getElementById("pipesSvg");
+    if(!grid || !svg) return;
+
+    const pipes = (appData.pipes || []).filter(p=>p.enabled !== false);
+    const gridRect = grid.getBoundingClientRect();
+    svg.setAttribute("viewBox", `0 0 ${gridRect.width} ${gridRect.height}`);
+    svg.setAttribute("preserveAspectRatio","none");
+    svg.innerHTML = "";
+
+    if(pipes.length === 0) return;
+
+    pipes.forEach(p=>{
+      const fromEl = tankCardElements[p.fromId];
+      const toEl   = tankCardElements[p.toId];
+      if(!fromEl || !toEl) return;
+
+      const r1 = fromEl.getBoundingClientRect();
+      const r2 = toEl.getBoundingClientRect();
+      const x1 = (r1.left + r1.width/2) - gridRect.left;
+      const y1 = (r1.top  + r1.height/2) - gridRect.top;
+      const x2 = (r2.left + r2.width/2) - gridRect.left;
+      const y2 = (r2.top  + r2.height/2) - gridRect.top;
+
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const midX = x1 + dx/2;
+      const midY = y1 + dy/2;
+      const offset = Math.min(40, Math.sqrt(dx*dx + dy*dy)/3);
+      const c1x = x1 + dx/3;
+      const c1y = y1 - offset;
+      const c2x = x2 - dx/3;
+      const c2y = y2 - offset;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("d", `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`);
+      path.setAttribute("fill","none");
+      path.setAttribute("stroke","rgba(56,189,248,0.8)");
+      path.setAttribute("stroke-width","3");
+      path.setAttribute("stroke-linecap","round");
+      path.setAttribute("stroke-dasharray","6 4");
+      svg.appendChild(path);
+
+      if(p.label){
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x", midX);
+        text.setAttribute("y", midY - 6);
+        text.setAttribute("text-anchor","middle");
+        text.setAttribute("font-size","10");
+        text.setAttribute("fill","#e5e7eb");
+        text.textContent = p.label;
+        svg.appendChild(text);
+      }
+    });
+  }
+
+  function enableCardDrag(card, tankId){
+    const grid = document.getElementById("tankGrid");
+    let isDown = false;
+    let offsetX = 0, offsetY = 0;
+    let gridRect, cardRect;
+
+    card.addEventListener("mousedown", (e)=>{
+      if(!layoutEditMode) return;
+      isDown = true;
+      gridRect = grid.getBoundingClientRect();
+      cardRect = card.getBoundingClientRect();
+      offsetX = e.clientX - cardRect.left;
+      offsetY = e.clientY - cardRect.top;
+
+      function onMove(ev){
+        if(!isDown) return;
+        const x = ev.clientX - gridRect.left - offsetX;
+        const y = ev.clientY - gridRect.top  - offsetY;
+        const maxX = gridRect.width  - cardRect.width;
+        const maxY = gridRect.height - cardRect.height;
+        const clampedX = Math.max(0, Math.min(maxX, x));
+        const clampedY = Math.max(0, Math.min(maxY, y));
+        const percX = (clampedX / gridRect.width)*100;
+        const percY = (clampedY / gridRect.height)*100;
+        card.style.left = percX + "%";
+        card.style.top  = percY + "%";
+        if(!appData.layout) appData.layout = {};
+        appData.layout[tankId] = {x:percX, y:percY};
+        renderPipes();
+      }
+
+      function onUp(){
+        if(!isDown) return;
+        isDown = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        saveData();
+      }
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  }
+
+  // Render dashboard tanks
+  function renderTankDashboard(){
+    const grid = document.getElementById("tankGrid");
+    if(!grid) return;
+
+    // Asegurar SVG de cañerías
+    let svg = document.getElementById("pipesSvg");
+    if(!svg){
+      svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+      svg.setAttribute("id","pipesSvg");
+      grid.prepend(svg);
+    }
+
+    // Borrar tarjetas anteriores, dejar SVG
+    grid.querySelectorAll(".tank-card").forEach(el=>el.remove());
+    tankCardElements = {};
+
+    appData.tanks.forEach(t=>{
+      const cap = Number(t.capacidadKg)||0;
+      const stock = Number(t.stockKg)||0;
+      const perc = cap>0 ? (stock/cap)*100 : 0;
+      let badgeClass="ok";
+      if(perc<25) badgeClass="danger";
+      else if(perc<50) badgeClass="warn";
+      const lastDate = t.lastDate ? t.lastDate : "Sin medición";
+      const percDisplay = perc.toFixed(1)+"%";
+      const isEmpty = stock <= 0.01;
+      const fillHeight = perc<=0 ? 0 : Math.max(6, Math.min(100, perc));
+
+      const card = document.createElement("div");
+      card.className = "tank-card";
+      card.innerHTML = `
+        <div class="tank-header">
+          <div class="tank-name">🛢️ ${t.name}</div>
+          <div class="chip">Últ. med.: ${lastDate}</div>
+        </div>
+        <div class="tank-body">
+          <div class="tank-shape">
+            <div class="tank-neck"></div>
+            <div class="tank-fill" style="height:${fillHeight}%">
+              <span>${percDisplay}</span>
+            </div>
+            <div class="tank-empty-label" style="opacity:${isEmpty ? 1 : 0}">VACÍO</div>
+          </div>
+          <div class="tank-info">
+            <div class="tank-info-row">
+              <span>Stock:</span>
+              <strong>${formatKg(stock)}</strong>
+            </div>
+            <div class="tank-info-row">
+              <span>Capacidad:</span>
+              <span>${formatKg(cap)}</span>
+            </div>
+            <div class="tank-info-row">
+              <span>Nivel:</span>
+              <span class="badge ${badgeClass}">
+                ${percDisplay}
+              </span>
+            </div>
+            <div class="perc-bar">
+              <div class="perc-bar-fill" style="width:${Math.max(0,Math.min(100,perc))}%"></div>
+            </div>
+            <div class="perc-label">Tanque ocupado vs capacidad</div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+
+      // aplicar posición de plano
+      const layout = appData.layout && appData.layout[t.id];
+      if(layout){
+        card.style.left = layout.x + "%";
+        card.style.top  = layout.y + "%";
+      }
+
+      tankCardElements[t.id] = card;
+      enableCardDrag(card, t.id);
+    });
+
+    // renderizar cañerías después de pintar tarjetas
+    requestAnimationFrame(renderPipes);
+  }
+
+  // Render config rows
+  function renderConfigRows(){
+    const cont = document.getElementById("configRows");
+    cont.innerHTML = "";
+    appData.tanks.forEach(t=>{
+      const row = document.createElement("div");
+      row.className = "field-row";
+      row.style.marginBottom = "4px";
+      row.innerHTML = `
+        <div>
+          <label>${t.name} · Capacidad (kg)
+            <input type="number" step="1" min="0" data-field="capacidadKg" data-tank="${t.id}" value="${t.capacidadKg}">
+          </label>
+        </div>
+        <div>
+          <label>${t.name} · Vacío máx (cm)
+            <input type="number" step="0.1" min="${MIN_VACIO_CM+1}" data-field="alturaMaxCm" data-tank="${t.id}" value="${t.alturaMaxCm}">
+          </label>
+        </div>
+      `;
+      cont.appendChild(row);
+    });
+  }
+
+  // Render config de cañerías
+  function renderPipesConfigRows(){
+    const cont = document.getElementById("pipesConfigRows");
+    cont.innerHTML = "";
+    const tanks = appData.tanks || [];
+    appData.pipes.forEach((p, idx)=>{
+      const row = document.createElement("div");
+      row.className = "pipe-row";
+      row.dataset.pid = p.id || ("P"+idx);
+      row.innerHTML = `
+        <select class="pipe-from">
+          ${tanks.map(t=>`<option value="${t.id}" ${t.id===p.fromId?"selected":""}>${t.name}</option>`).join("")}
+        </select>
+        <span>➡</span>
+        <select class="pipe-to">
+          ${tanks.map(t=>`<option value="${t.id}" ${t.id===p.toId?"selected":""}>${t.name}</option>`).join("")}
+        </select>
+        <input class="pipe-label" type="text" placeholder="Etiqueta (opcional)" value="${p.label||""}" style="max-width:150px;">
+        <label style="align-items:center;gap:4px;">
+          <span>Activo</span>
+          <input type="checkbox" class="pipe-enabled" ${p.enabled===false?"":"checked"}>
+        </label>
+        <button type="button" class="btn-ghost pipe-delete-btn">🗑</button>
+      `;
+      cont.appendChild(row);
+    });
+
+    // Delegado para borrar filas
+    cont.addEventListener("click", e=>{
+      if(e.target.classList.contains("pipe-delete-btn")){
+        const row = e.target.closest(".pipe-row");
+        if(!row) return;
+        row.remove();
+      }
+    }, { once:true });
+  }
+
+  // Render selects (tanques) en formularios
+  function renderTankSelects(){
+    const selMed = document.getElementById("medicionTanque");
+    selMed.innerHTML = appData.tanks.map(t=>`<option value="${t.id}">${t.name}</option>`).join("");
+  }
+
+  // Recalcular stock calculado preview cuando cambian datos de medición
+  function updateMedicionPreview(){
+    const tankId = document.getElementById("medicionTanque").value;
+    const vacioVal = parseFloat(document.getElementById("medicionVacio").value);
+    const out = document.getElementById("medicionStockCalculado");
+    const t = getTankById(tankId);
+    if(!t || isNaN(vacioVal) || vacioVal<0){
+      out.value = "";
+      return;
+    }
+    const stock = calcularStockPorVacio(t, vacioVal);
+    out.value = formatKg(stock);
+  }
+
+  // Historial: render por fecha
+  function renderHistorialDia(date){
+    const tbody = document.getElementById("historialTableBody");
+    const totalSpan = document.getElementById("historialTotalStock");
+    const fechaLbl = document.getElementById("historialFechaLbl");
+    if(!tbody || !totalSpan) return;
+
+    if(!date){
+      tbody.innerHTML = "";
+      totalSpan.textContent = "0 kg";
+      if(fechaLbl) fechaLbl.textContent = "-";
+      return;
+    }
+
+    let total = 0;
+    let html = "";
+
+    appData.tanks.forEach(t=>{
+      const medsTank = appData.mediciones
+        .filter(m=>m.tankId===t.id && m.date<=date)
+        .sort((a,b)=>a.date.localeCompare(b.date));
+      const last = medsTank[medsTank.length-1];
+      if(last){
+        total += last.stockKg;
+        const vacioStr = (Math.round(last.vacioCm*10)/10).toLocaleString("es-AR",{minimumFractionDigits:1,maximumFractionDigits:1});
+        html += `
+          <tr>
+            <td>${t.name}</td>
+            <td>${last.date}</td>
+            <td>${vacioStr} cm</td>
+            <td>${formatKg(last.stockKg)}</td>
+          </tr>
+        `;
+      }else{
+        html += `
+          <tr>
+            <td>${t.name}</td>
+            <td colspan="3" style="font-size:.75rem;color:var(--muted);">
+              Sin mediciones hasta esta fecha
+            </td>
+          </tr>
+        `;
+      }
+    });
+
+    tbody.innerHTML = html;
+    totalSpan.textContent = formatKg(total);
+    if(fechaLbl) fechaLbl.textContent = date;
+  }
+
+  function setupHistorial(){
+    const input = document.getElementById("historialFecha");
+    if(!input) return;
+    const today = todayISO();
+    input.value = today;
+    input.addEventListener("change", ()=>{
+      renderHistorialDia(input.value);
+    });
+    renderHistorialDia(input.value);
+  }
+
+  // Tabs dentro del menú
+  function setupTabs(){
+    const btns = document.querySelectorAll(".tab-btn");
+    btns.forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        btns.forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const tabId = btn.dataset.tab;
+        document.querySelectorAll(".tab-content").forEach(tc=>{
+          tc.classList.toggle("active", tc.id===tabId);
+        });
+      });
+    });
+  }
+
+  function setupMenuOverlay(){
+    const overlay = document.getElementById("menuOverlay");
+    const openBtn = document.getElementById("openMenuBtn");
+    const closeBtn = document.getElementById("closeMenuBtn");
+
+    openBtn.addEventListener("click", ()=>{
+      overlay.style.display = "flex";
+    });
+    closeBtn.addEventListener("click", ()=>{
+      overlay.style.display = "none";
+    });
+    overlay.addEventListener("click", e=>{
+      if(e.target === overlay){
+        overlay.style.display = "none";
+      }
+    });
+  }
+
+  function setupForms(){
+    // Config
+    document.getElementById("configForm").addEventListener("submit", e=>{
+      e.preventDefault();
+      const inputs = document.querySelectorAll("#configRows input");
+      inputs.forEach(inp=>{
+        const id = inp.dataset.tank;
+        const field = inp.dataset.field;
+        const val = parseFloat(inp.value);
+        const t = getTankById(id);
+        if(t && !isNaN(val)){
+          t[field] = val;
+        }
+      });
+
+      // Reconstruir pipes desde la UI
+      const pipeRows = document.querySelectorAll("#pipesConfigRows .pipe-row");
+      const newPipes = [];
+      pipeRows.forEach((row, idx)=>{
+        const fromId = row.querySelector(".pipe-from").value;
+        const toId   = row.querySelector(".pipe-to").value;
+        const label  = row.querySelector(".pipe-label").value.trim();
+        const enabled = row.querySelector(".pipe-enabled").checked;
+        if(fromId && toId && fromId !== toId){
+          newPipes.push({
+            id: row.dataset.pid || ("P"+Date.now()+"_"+idx),
+            fromId,
+            toId,
+            label,
+            enabled
+          });
+        }
+      });
+      appData.pipes = newPipes;
+
+      saveData();
+      renderHeaderTotals();
+      renderTankDashboard();
+      renderHistorialDia(document.getElementById("historialFecha")?.value || todayISO());
+      showToast("Configuración de tanques y flujos guardada ✅");
+    });
+
+    // Botón agregar flujo
+    document.getElementById("addPipeBtn").addEventListener("click", ()=>{
+      if(appData.tanks.length < 2){
+        alert("Necesitás al menos dos tanques para crear un flujo.");
+        return;
+      }
+      const t1 = appData.tanks[0].id;
+      const t2 = appData.tanks[1].id;
+      appData.pipes.push({
+        id:"P"+Date.now(),
+        fromId:t1,
+        toId:t2,
+        label:"",
+        enabled:true
+      });
+      renderPipesConfigRows();
+    });
+
+    // Reset total
+    document.getElementById("resetDataBtn").addEventListener("click", ()=>{
+      if(confirm("¿Seguro que querés borrar TODOS los datos y volver a cero?")){
+        appData = defaultData();
+        saveData();
+        ensureLayoutDefaults();
+        initUI();
+        const histInput = document.getElementById("historialFecha");
+        if(histInput){
+          histInput.value = todayISO();
+          renderHistorialDia(histInput.value);
+        }
+        showToast("App reseteada. Todo desde cero 🧨");
+      }
+    });
+
+    const medFecha = document.getElementById("medicionFecha");
+    const movFecha = document.getElementById("movFecha");
+    const resumenFecha = document.getElementById("resumenFecha");
+    const today = todayISO();
+    medFecha.value = today;
+    movFecha.value = today;
+    resumenFecha.value = today;
+
+    document.getElementById("medicionTanque").addEventListener("change", updateMedicionPreview);
+    document.getElementById("medicionVacio").addEventListener("input", updateMedicionPreview);
+
+    document.getElementById("medicionForm").addEventListener("submit", e=>{
+      e.preventDefault();
+      const date = medFecha.value;
+      const tankId = document.getElementById("medicionTanque").value;
+      const vacio = parseFloat(document.getElementById("medicionVacio").value);
+      const t = getTankById(tankId);
+      if(!date || !t || isNaN(vacio) || vacio<0){
+        alert("Completá bien los datos de medición.");
+        return;
+      }
+      const stock = calcularStockPorVacio(t, vacio);
+      appData.mediciones.push({
+        id:"M"+Date.now(),
+        date,
+        tankId,
+        vacioCm:vacio,
+        stockKg:stock
+      });
+      // actualizar stock del tanque
+      t.stockKg = stock;
+      t.lastDate = date;
+      saveData();
+      renderHeaderTotals();
+      renderTankDashboard();
+      updateMedicionPreview();
+      const histInput = document.getElementById("historialFecha");
+      if(histInput && histInput.value === date){
+        renderHistorialDia(histInput.value);
+      }
+      showToast(`Medición registrada en ${t.name} ✅`);
+    });
+
+    // Movimientos
+    document.getElementById("movForm").addEventListener("submit", e=>{
+      e.preventDefault();
+      const date = movFecha.value;
+      const tipo = document.getElementById("movTipo").value;
+      const kg = parseFloat(document.getElementById("movKg").value);
+      const notas = document.getElementById("movNotas").value.trim();
+      if(!date || isNaN(kg) || kg<=0){
+        alert("Completá una fecha y una cantidad válida (>0).");
+        return;
+      }
+      appData.movimientos.push({
+        id:"V"+Date.now(),
+        date,
+        tipo,
+        kg,
+        notas
+      });
+      saveData();
+      renderResumenDia(resumenFecha.value || date);
+      showToast("Movimiento registrado 📆");
+      document.getElementById("movKg").value = "";
+      document.getElementById("movNotas").value = "";
+    });
+
+    // Resumen diario
+    resumenFecha.addEventListener("change", ()=>{
+      renderResumenDia(resumenFecha.value);
+    });
+  }
+
+  function renderResumenDia(date){
+    const boxC = document.getElementById("resumenConsumo");
+    const boxI = document.getElementById("resumenIngreso");
+    const boxN = document.getElementById("resumenNeto");
+    if(!date){
+      boxC.textContent = "0 kg";
+      boxI.textContent = "0 kg";
+      boxN.textContent = "0 kg";
+      return;
+    }
+    let cons=0, ing=0;
+    appData.movimientos
+      .filter(m=>m.date===date)
+      .forEach(m=>{
+        if(m.tipo==="consumo") cons += m.kg;
+        else ing += m.kg;
+      });
+    const neto = ing-cons;
+    boxC.textContent = formatKg(cons);
+    boxI.textContent = formatKg(ing);
+    boxN.textContent = (neto>=0?"+":"") +
+      (Math.round(neto*10)/10).toLocaleString("es-AR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " kg";
+  }
+
+  function setupLayoutControls(){
+    const grid = document.getElementById("tankGrid");
+    const toggleBtn = document.getElementById("toggleLayoutMode");
+    const resetBtn = document.getElementById("resetLayoutBtn");
+
+    toggleBtn.addEventListener("click", ()=>{
+      layoutEditMode = !layoutEditMode;
+      grid.classList.toggle("editing", layoutEditMode);
+      toggleBtn.textContent = layoutEditMode ? "💾 Fijar plano" : "🧱 Editar plano";
+      if(layoutEditMode){
+        showToast("Modo edición de plano ON – arrastrá los tanques 🗺️");
+      }else{
+        showToast("Plano guardado ✅");
+        saveData();
+      }
+    });
+
+    resetBtn.addEventListener("click", ()=>{
+      if(!confirm("¿Resetear posiciones de los tanques al plano base?")) return;
+      appData.layout = {};
+      ensureLayoutDefaults();
+      saveData();
+      renderTankDashboard();
+      showToast("Plano reseteado ↺");
+    });
+  }
+
+  function applyTheme(theme){
+    currentTheme = theme;
+    const body = document.body;
+    if(theme === "light") body.classList.add("light");
+    else body.classList.remove("light");
+    localStorage.setItem("pastaTheme", theme);
+    const btn = document.getElementById("themeToggleBtn");
+    if(btn){
+      if(theme === "light") btn.innerHTML = '<span class="icon">☀️</span> Claro';
+      else btn.innerHTML = '<span class="icon">🌙</span> Oscuro';
+    }
+  }
+
+  function setupTheme(){
+    const stored = localStorage.getItem("pastaTheme");
+    const initial = (stored === "dark" || stored === "light") ? stored : "light";
+    applyTheme(initial);
+    const btn = document.getElementById("themeToggleBtn");
+    btn.addEventListener("click", ()=>{
+      applyTheme(currentTheme === "light" ? "dark" : "light");
+    });
+  }
+
+  function initUI(){
+    renderHeaderTotals();
+    renderTankDashboard();
+    renderConfigRows();
+    renderPipesConfigRows();
+    renderTankSelects();
+    const resumenFecha = document.getElementById("resumenFecha");
+    if(resumenFecha) renderResumenDia(resumenFecha.value);
+    setupLayoutControls();
+    renderHistorialDia(document.getElementById("historialFecha")?.value || todayISO());
+  }
+
+  // Loading screen hide
+  window.addEventListener("load", ()=>{
+    const loader = document.getElementById("loadingScreen");
+    setTimeout(()=>{
+      loader.classList.add("hide");
+      setTimeout(()=>{ loader.style.display = "none"; }, 450);
+    }, 2500);
+  });
+
+  // INIT
+  const appDataLoaded = appData; // solo para marcar que ya está
+  setupTheme();
+  setupTabs();
+  setupMenuOverlay();
+  setupForms();
+  setupHistorial();
+  ensureLayoutDefaults();
+  initUI();
+</script>
+</body>
+</html>
